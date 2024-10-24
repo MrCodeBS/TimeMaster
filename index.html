@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Work Time Calculator</title>
+    <title>Advanced Work Time Calculator</title>
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            max-width: 600px;
+            max-width: 800px;
             margin: 2rem auto;
             padding: 0 1rem;
             background-color: #f5f5f5;
@@ -22,6 +22,13 @@
 
         h1 {
             color: #2d3748;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
             margin-bottom: 1.5rem;
         }
 
@@ -41,6 +48,24 @@
             padding: 0.5rem;
             border: 1px solid #e2e8f0;
             border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .checkbox-group input {
+            width: auto;
+            margin: 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
             margin-bottom: 1rem;
         }
 
@@ -59,6 +84,14 @@
             background-color: #3182ce;
         }
 
+        button.export {
+            background-color: #48bb78;
+        }
+
+        button.export:hover {
+            background-color: #38a169;
+        }
+
         .results {
             margin-top: 2rem;
             padding: 1rem;
@@ -66,56 +99,126 @@
             border-radius: 4px;
         }
 
-        .results div {
-            margin-bottom: 0.5rem;
+        .warning {
+            background-color: #fff5f5;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
         }
 
         .hidden {
             display: none;
         }
+
+        #records {
+            margin-top: 1rem;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #records th, #records td {
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        #records th {
+            background-color: #f7fafc;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Work Time Calculator</h1>
+        <h1>Advanced Work Time Calculator</h1>
         
-        <div class="input-group">
-            <label for="startTime">Start Time:</label>
-            <input type="time" id="startTime" value="08:00">
+        <div class="input-grid">
+            <div class="input-group">
+                <label for="date">Date:</label>
+                <input type="date" id="date" value="">
+            </div>
+
+            <div class="input-group">
+                <label for="startTime">Start Time:</label>
+                <input type="time" id="startTime" value="08:00">
+            </div>
+
+            <div class="input-group">
+                <label for="endTime">End Time:</label>
+                <input type="time" id="endTime" value="16:30">
+            </div>
+
+            <div class="input-group">
+                <label for="breakTime">Break Time (minutes):</label>
+                <input type="number" id="breakTime" value="30" min="0">
+            </div>
         </div>
 
-        <div class="input-group">
-            <label for="endTime">End Time:</label>
-            <input type="time" id="endTime" value="16:30">
+        <div class="input-grid">
+            <div class="input-group">
+                <label for="localTravel">Local Travel Time (minutes):</label>
+                <input type="number" id="localTravel" value="30" min="0">
+            </div>
+
+            <div class="input-group">
+                <label for="intTravel">International Travel Time (hours):</label>
+                <input type="number" id="intTravel" value="0" min="0" step="0.5">
+            </div>
         </div>
 
-        <div class="input-group">
-            <label for="travelTime">Travel Time (minutes):</label>
-            <input type="number" id="travelTime" value="30" min="0">
+        <div class="checkbox-group">
+            <input type="checkbox" id="isInternational">
+            <label for="isInternational">International Travel</label>
         </div>
 
-        <div class="input-group">
-            <label for="breakTime">Break Time (minutes):</label>
-            <input type="number" id="breakTime" value="30" min="0">
+        <div class="button-group">
+            <button onclick="calculateTime()">Calculate</button>
+            <button class="export" onclick="exportToCSV()">Export to CSV</button>
         </div>
 
-        <button onclick="calculateTime()">Calculate</button>
+        <div id="warning" class="warning hidden">
+            Warning: Total work time exceeds 9 hours!
+        </div>
 
         <div id="results" class="results hidden">
             <div id="totalWorkTime"></div>
-            <div id="totalTravelTime"></div>
             <div id="productiveTime"></div>
+            <div id="plusHours"></div>
+            <div id="localTravelTime"></div>
+            <div id="internationalTravelTime"></div>
             <div id="totalTime"></div>
         </div>
+
+        <table id="records" class="hidden">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Work Hours</th>
+                    <th>Plus Hours</th>
+                    <th>Local Travel</th>
+                    <th>Int'l Travel</th>
+                    <th>Total Time</th>
+                </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+        </table>
     </div>
 
     <script>
+        // Set today's date as default
+        document.getElementById('date').valueAsDate = new Date();
+
+        let timeRecords = [];
+
         function calculateTime() {
             // Get input values
+            const date = document.getElementById('date').value;
             const startTime = document.getElementById('startTime').value;
             const endTime = document.getElementById('endTime').value;
-            const travelTime = parseInt(document.getElementById('travelTime').value);
             const breakTime = parseInt(document.getElementById('breakTime').value);
+            const localTravel = parseInt(document.getElementById('localTravel').value);
+            const intTravel = parseFloat(document.getElementById('intTravel').value);
+            const isInternational = document.getElementById('isInternational').checked;
 
             // Convert times to minutes since midnight
             const [startHours, startMinutes] = startTime.split(':');
@@ -125,13 +228,26 @@
             const endMinutesSinceMidnight = parseInt(endHours) * 60 + parseInt(endMinutes);
 
             // Calculate work time in minutes
-            let workMinutes = endMinutesSinceMidnight - startMinutesSinceMidnight;
+            let workMinutes = endMinutesSinceMidnight - startMinutesSinceMidnight - breakTime;
             
-            // Calculate productive time (work time minus break)
-            const productiveMinutes = workMinutes - breakTime;
-            
-            // Calculate total time including travel
-            const totalMinutes = workMinutes + (travelTime * 2);
+            // Calculate plus hours (anything over 8 hours)
+            const regularMinutes = 8 * 60; // 8 hours in minutes
+            const plusMinutes = Math.max(0, workMinutes - regularMinutes);
+
+            // Calculate travel times
+            const localTravelTotal = localTravel * 2;
+            const intTravelTotal = isInternational ? intTravel * 60 : 0; // Convert hours to minutes
+
+            // Calculate total time
+            const totalMinutes = workMinutes + localTravelTotal + intTravelTotal;
+
+            // Check for warning
+            const warning = document.getElementById('warning');
+            if (workMinutes >= 9 * 60) { // 9 hours in minutes
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
 
             // Format results
             const formatTime = (minutes) => {
@@ -140,12 +256,74 @@
                 return `${hours}h ${mins}m`;
             };
 
+            // Store record
+            const record = {
+                date: date,
+                workHours: formatTime(workMinutes),
+                plusHours: formatTime(plusMinutes),
+                localTravel: formatTime(localTravelTotal),
+                intTravel: formatTime(intTravelTotal),
+                totalTime: formatTime(totalMinutes)
+            };
+            timeRecords.unshift(record);
+
             // Display results
             document.getElementById('results').classList.remove('hidden');
             document.getElementById('totalWorkTime').textContent = `Total Work Time: ${formatTime(workMinutes)}`;
-            document.getElementById('totalTravelTime').textContent = `Total Travel Time: ${formatTime(travelTime * 2)}`;
-            document.getElementById('productiveTime').textContent = `Productive Time: ${formatTime(productiveMinutes)}`;
-            document.getElementById('totalTime').textContent = `Total Time (incl. travel): ${formatTime(totalMinutes)}`;
+            document.getElementById('productiveTime').textContent = `Regular Hours: ${formatTime(Math.min(workMinutes, regularMinutes))}`;
+            document.getElementById('plusHours').textContent = `Plus Hours: ${formatTime(plusMinutes)}`;
+            document.getElementById('localTravelTime').textContent = `Local Travel Time: ${formatTime(localTravelTotal)}`;
+            document.getElementById('internationalTravelTime').textContent = `International Travel Time: ${formatTime(intTravelTotal)}`;
+            document.getElementById('totalTime').textContent = `Total Time: ${formatTime(totalMinutes)}`;
+
+            updateRecordsTable();
+        }
+
+        function updateRecordsTable() {
+            const table = document.getElementById('records');
+            const tbody = document.getElementById('recordsBody');
+            table.classList.remove('hidden');
+            
+            tbody.innerHTML = timeRecords.map(record => `
+                <tr>
+                    <td>${record.date}</td>
+                    <td>${record.workHours}</td>
+                    <td>${record.plusHours}</td>
+                    <td>${record.localTravel}</td>
+                    <td>${record.intTravel}</td>
+                    <td>${record.totalTime}</td>
+                </tr>
+            `).join('');
+        }
+
+        function exportToCSV() {
+            if (timeRecords.length === 0) {
+                alert('No data to export');
+                return;
+            }
+
+            const headers = ['Date', 'Work Hours', 'Plus Hours', 'Local Travel', 'International Travel', 'Total Time'];
+            const csvContent = [
+                headers.join(','),
+                ...timeRecords.map(record => [
+                    record.date,
+                    record.workHours,
+                    record.plusHours,
+                    record.localTravel,
+                    record.intTravel,
+                    record.totalTime
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `work_hours_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
