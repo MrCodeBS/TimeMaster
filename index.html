@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Time Calculator</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            background-color: #4299e1;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #3182ce;
+        }
+
+        .results {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #ebf8ff;
+            border-radius: 4px;
+        }
+
+        .results div {
+            margin-bottom: 0.5rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Work Time Calculator</h1>
+        
+        <div class="input-group">
+            <label for="startTime">Start Time:</label>
+            <input type="time" id="startTime" value="08:00">
+        </div>
+
+        <div class="input-group">
+            <label for="endTime">End Time:</label>
+            <input type="time" id="endTime" value="16:30">
+        </div>
+
+        <div class="input-group">
+            <label for="travelTime">Travel Time (minutes):</label>
+            <input type="number" id="travelTime" value="30" min="0">
+        </div>
+
+        <div class="input-group">
+            <label for="breakTime">Break Time (minutes):</label>
+            <input type="number" id="breakTime" value="30" min="0">
+        </div>
+
+        <button onclick="calculateTime()">Calculate</button>
+
+        <div id="results" class="results hidden">
+            <div id="totalWorkTime"></div>
+            <div id="totalTravelTime"></div>
+            <div id="productiveTime"></div>
+            <div id="totalTime"></div>
+        </div>
+    </div>
+
+    <script>
+        function calculateTime() {
+            // Get input values
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const travelTime = parseInt(document.getElementById('travelTime').value);
+            const breakTime = parseInt(document.getElementById('breakTime').value);
+
+            // Convert times to minutes since midnight
+            const [startHours, startMinutes] = startTime.split(':');
+            const [endHours, endMinutes] = endTime.split(':');
+            
+            const startMinutesSinceMidnight = parseInt(startHours) * 60 + parseInt(startMinutes);
+            const endMinutesSinceMidnight = parseInt(endHours) * 60 + parseInt(endMinutes);
+
+            // Calculate work time in minutes
+            let workMinutes = endMinutesSinceMidnight - startMinutesSinceMidnight;
+            
+            // Calculate productive time (work time minus break)
+            const productiveMinutes = workMinutes - breakTime;
+            
+            // Calculate total time including travel
+            const totalMinutes = workMinutes + (travelTime * 2);
+
+            // Format results
+            const formatTime = (minutes) => {
+                const hours = Math.floor(minutes / 60);
+                const mins = minutes % 60;
+                return `${hours}h ${mins}m`;
+            };
+
+            // Display results
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('totalWorkTime').textContent = `Total Work Time: ${formatTime(workMinutes)}`;
+            document.getElementById('totalTravelTime').textContent = `Total Travel Time: ${formatTime(travelTime * 2)}`;
+            document.getElementById('productiveTime').textContent = `Productive Time: ${formatTime(productiveMinutes)}`;
+            document.getElementById('totalTime').textContent = `Total Time (incl. travel): ${formatTime(totalMinutes)}`;
+        }
+    </script>
+</body>
+</html>
